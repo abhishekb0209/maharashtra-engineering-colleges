@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model College {
+  id              String   @id @default(cuid())
+  name            String
+  code            String   @unique
+  type            String   // Government, Private, Autonomous, Aided
+  university      String
+  city            String
+  district        String
+  address         String
+  pincode         String
+  latitude        Float?
+  longitude       Float?
+  establishedYear Int
+  website         String?
+  email           String?
+  phone           String?
+  description     String?  @db.Text
+  
+  // Accreditation
+  naacGrade       String?
+  naacScore       Float?
+  naacValidUntil  DateTime?
+  nbaAccredited   Boolean  @default(false)
+  nbaPrograms     String[] // Array of accredited programs
+  nbaValidUntil   DateTime?
+  aicteApproved   Boolean  @default(true)
+  aicteCode       String?
+  autonomous      Boolean  @default(false)
+  
+  // Facilities
+  facilities      String[] // Array of facilities
+  boysHostel      Boolean  @default(false)
+  girlsHostel     Boolean  @default(false)
+  hostelCapacity  Int?
+  
+  // Fees
+  tuitionFee      Int
+  developmentFee  Int?
+  otherFees       Int?
+  totalAnnualFee  Int
+  hostelFee       Int?
+  feeCategory     String   // Government, Private, Aided
+  
+  // Placement Stats
+  placementYear   Int
+  totalStudents   Int
+  studentsPlaced  Int
+  placementPercentage Float
+  highestPackage  Float
+  averagePackage  Float
+  medianPackage   Float
+  topRecruiters   String[] // Array of company names
+  
+  images          String[] // Array of image URLs
+  
+  courses         Course[]
+  cutoffs         Cutoff[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([city])
+  @@index([district])
+  @@index([type])
+  @@index([totalAnnualFee])
+  @@index([placementPercentage])
+}
+
+model Course {
+  id            String   @id @default(cuid())
+  collegeId     String
+  college       College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  
+  branch        String
+  branchCode    String
+  degree        String   // BE, BTech, ME, MTech
+  duration      Int      // in years
+  intake        Int
+  affiliatedTo  String
+  accredited    Boolean  @default(false)
+  
+  cutoffs       Cutoff[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([collegeId, branchCode])
+  @@index([branch])
+}
+
+model Cutoff {
+  id                String   @id @default(cuid())
+  collegeId         String
+  college           College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  courseId          String
+  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  year              Int
+  round             Int      // 1, 2, 3
+  examType          String   // CET, JEE
+  category          String   // OPEN, OBC, SC, ST, EWS, TFWS, etc.
+  
+  openingRank       Int?
+  closingRank       Int?
+  openingPercentile Float?
+  closingPercentile Float?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([collegeId, courseId, year, round, examType, category])
+  @@index([year])
+  @@index([examType])
+  @@index([category])
+  @@index([closingRank])
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  password        String
+  name            String
+  role            String   @default("user") // user, admin
+  
+  savedColleges   String[] // Array of college IDs
+  
+  // Preferences
+  examType        String?
+  rank            Int?
+  percentile      Float?
+  category        String?
+  preferredBranches String[]
+  preferredCities   String[]
+  maxBudget       Int?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
